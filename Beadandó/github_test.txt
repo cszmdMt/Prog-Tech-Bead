@@ -1,0 +1,1 @@
+Fájlok ellenőrzése a GitHubon. Ez a fájl azért jött létre, hogy megerősítsük a feltöltést.
