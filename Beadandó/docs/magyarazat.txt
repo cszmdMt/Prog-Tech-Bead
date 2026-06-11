@@ -1,0 +1,66 @@
+TERVEZÉSI MINTÁK MAGYARÁZATA - CryptoTrend Projekt
+
+A projekt az ötös osztályzat elérése érdekében három alapvető szoftvertervezési mintát alkalmaz, amelyek javítják a kód olvashatóságát, karbantarthatóságát és bővíthetőségét.
+
+---
+
+1. SINGLETON (EGYKEKE) MINTA
+Helye: app/database.py (DatabaseManager osztály)
+
+Miért ezt használtam?
+Az adatbázis-kapcsolatok (engine) létrehozása erőforrásigényes folyamat. A Singleton minta biztosítja, hogy az egész alkalmazásban csak egyetlen DatabaseManager példány létezzen, így elkerüljük a feleslegesen megnyitott adatbázis-kapcsolatokat és az esetleges versenyhelyzeteket a fájl alapú SQLite adatbázisnál.
+
+Miket használtam?
+A Python `__new__` metódusát a példányosítás kontrollálására, az SQLAlchemy `create_engine` és `sessionmaker` függvényeit az adatbázis-logika kezelésére, valamint egy osztályszintű `_instance` változót a példány tárolására.
+
+Mivel tudnám még tovább fejleszteni?
+A Singleton mintát kiegészíthetném szálbiztos (thread-safe) megvalósítással (pl. `threading.Lock` használatával), hogy többszálú környezetben is garantált legyen az egyetlen példány. Továbbá bevezethetnék egy "Lazy Initialization" mechanizmust, ha az erőforrásigény még kritikusabbá válna.
+
+Miért választottam ezt a témát?
+A modern webalkalmazások alapköve a stabil adatkezelés. Ez a téma lehetővé teszi a háttérfolyamatok és az erőforrás-menedzsment mélyebb megértését, ami elengedhetetlen egy skálázható szoftver tervezésekor.
+
+Elméleti indoklás:
+A Singleton a létrehozási (creational) minták közé tartozik. Elméleti alapvetése, hogy bizonyos rendszerszintű komponensek (mint a loggerek vagy adatbázis-kezelők) globális hozzáférési pontot igényelnek, miközben állapotuk megosztott kell, hogy maradjon. A minta megakadályozza, hogy a kliens kód véletlenül több, egymástól független és potenciálisan konfliktusos állapotú példányt hozzon létre.
+
+---
+
+2. STRATEGY (STRATÉGIA) MINTA
+Helye: app/services/price_fetcher.py (PriceFetchStrategy és leszármazottai)
+
+Miért ezt használtam?
+A kriptovaluta árakat több forrásból is le lehet kérni (CoinGecko, Binance, stb.). A Strategy minta lehetővé teszi, hogy az adatlekérési algoritmust (stratégiát) bármikor kicseréljük anélkül, hogy a fő üzleti logikát (update_prices függvény) módosítani kellene. Ez biztosítja a "Open/Closed" elv érvényesülését.
+
+Miket használtam?
+Az `abc` (Abstract Base Classes) modult az interfész definiálásához, a `httpx` könyvtárat az aszinkron HTTP kérésekhez, és függőség-befecskendezést (dependency injection) a konkrét stratégia átadásához az `update_prices` függvényben.
+
+Mivel tudnám még tovább fejleszteni?
+Bevezethetnék egy "Strategy Factory"-t, amely automatikusan kiválasztja a legjobb forrást (pl. ha az egyik API limitet ér el, automatikusan vált a másikra). Emellett a stratégiák konfigurációját (API kulcsok, végpontok) is dinamizálhatnám.
+
+Miért választottam ezt a témát?
+Az aszinkron adatgyűjtés és a külső API-k kezelése napjaink egyik leggyakoribb fejlesztői feladata. A stratégia minta szemlélteti, hogyan lehet külső függőségektől függetleníteni a saját üzleti logikánkat.
+
+Elméleti indoklás:
+A Stratégia egy viselkedési (behavioral) minta. Az objektumorientált tervezés azon elvére épít, hogy a változó algoritmusokat ki kell szervezni külön osztályokba. Ezáltal az algoritmus implementációja függetlenné válik a felhasználó osztálytól, ami csökkenti a kód kapcsoltságát (coupling) és növeli az újrafelhasználhatóságot.
+
+---
+
+3. OBSERVER (MEGFIGYELŐ) MINTA
+Helye: app/services/price_fetcher.py (PriceSubject és PriceObserver)
+
+Miért ezt használtam?
+A rendszernek reagálnia kell az árváltozásokra. Az Observer minta segítségével a "Megfigyelők" feliratkozhatnak az árak frissülésére. Ez lehetővé teszi, hogy ha egy ár megváltozik, automatikusan naplózzunk, értesítést küldjünk vagy riasztást váltsunk ki anélkül, hogy a frissítő modult össze kellene fonni ezekkel a funkciókkal.
+
+Miket használtam?
+Egy `PriceSubject` osztályt a feliratkozók kezelésére, egy absztrakt `PriceObserver` osztályt az eseménykezelő felülethez, és konkrét megvalósításként egy `LoggingPriceObserver`-t a naplózáshoz.
+
+Mivel tudnám még tovább fejleszteni?
+Az eseménykezelést aszinkron üzenetsorba (pl. Redis/RabbitMQ) terelhetném, így a megfigyelők értesítése nem lassítaná a fő folyamatot. Továbbá bevezethetnék szűrt értesítéseket (pl. csak akkor értesítsen, ha az árváltozás meghalad egy bizonyos százalékot).
+
+Miért választottam ezt a témát?
+A reaktív programozás és az eseményvezérelt architektúra kulcsfontosságú a modern felhasználói élmény biztosításához. Az Observer minta tökéletesen modellezi a valósidejű rendszerek működését.
+
+Elméleti indoklás:
+Az Observer szintén viselkedési minta, amely egy "egy-a-sokhoz" típusú függőséget definiál az objektumok között. Elméleti jelentősége az "Inversion of Control" (IoC) elvben rejlik: nem a központi modul hívja meg a specifikus funkciókat, hanem a modulok regisztrálnak az eseményekre, így a központi egységnek nem kell ismernie a konkrét klienseket.
+
+---
+Ez a felépítés biztosítja a kód modularitását és megfelel a modern szoftverfejlesztési elveknek.
